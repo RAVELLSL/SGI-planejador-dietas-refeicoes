@@ -1,0 +1,1360 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <!-- Responsividade -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <!-- Importando a fonte Poppins do Google Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+  <title>Planejador de Dietas e Refeições</title>
+  <style>
+    /* ================================
+       VARIÁVEIS E ESTILOS GERAIS
+    ================================= */
+    :root {
+      --primary-color: #3498db;       /* Azul vibrante */
+      --secondary-color: #2980b9;     /* Azul escuro */
+      --background-color: #f4f7f6;      /* Fundo claro suave */
+      --card-background: #ffffff;     /* Fundo branco para os cards */
+      --text-color: #2c3e50;          /* Texto escuro */
+      --button-color: #3498db;
+      --button-hover: #2980b9;
+      --font-family: 'Poppins', sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: var(--background-color);
+      color: var(--text-color);
+      font-family: var(--font-family);
+      line-height: 1.6;
+    }
+
+    header {
+      background-color: var(--primary-color);
+      color: #fff;
+      text-align: center;
+      padding: 20px;
+      font-size: 2rem;
+      font-weight: 600;
+    }
+
+    main {
+      max-width: 1200px;
+      margin: 20px auto;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    h2 {
+      margin-bottom: 15px;
+      color: var(--primary-color);
+      font-size: 1.5rem;
+    }
+
+    h3 {
+      margin-bottom: 10px;
+      color: var(--secondary-color);
+      font-size: 1.3rem;
+    }
+
+    label {
+      font-weight: 600;
+      display: block;
+      margin-top: 10px;
+    }
+
+    select {
+      width: 100%;
+      padding: 10px;
+      margin-top: 10px;
+      margin-bottom: 15px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      font-size: 1rem;
+    }
+
+    button {
+      background-color: var(--button-color);
+      color: #fff;
+      border: none;
+      padding: 12px 20px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 1rem;
+      transition: background-color 0.3s ease;
+    }
+
+    button:hover {
+      background-color: var(--button-hover);
+    }
+
+    /* ================================
+       CARDS E LAYOUT DAS LINHAS
+    ================================= */
+    .card {
+      background: var(--card-background);
+      border-radius: 8px;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+      padding: 20px;
+      margin-bottom: 20px;
+    }
+
+    /* Linha superior: Configuração da Dieta e Assistente Inteligente lado a lado */
+    .top-row {
+      display: flex;
+      gap: 20px;
+      flex-wrap: wrap;
+    }
+    .top-row .card {
+      flex: 1 1 300px;
+    }
+
+    /* Estilo para o resultado do plano */
+    .planoRefeicoes {
+      background: #ecf0f1;
+      padding: 15px;
+      border-radius: 4px;
+      margin-top: 10px;
+    }
+    .refeicao {
+      background: #ecf0f1;
+      padding: 15px;
+      border-radius: 4px;
+      margin-bottom: 15px;
+    }
+    .refeicao ul {
+      margin-left: 20px;
+      list-style: disc;
+    }
+
+    /* Responsividade */
+    @media (max-width: 768px) {
+      header {
+        font-size: 1.8rem;
+      }
+      main {
+        padding: 10px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    Planejador de Dietas e Refeições
+  </header>
+  <main>
+    <!-- Linha Superior: Configuração da Dieta e Assistente Inteligente -->
+    <div class="top-row">
+      <div class="card">
+        <h2>Configuração da Dieta</h2>
+        <label for="restricoes">Restrições Alimentares:</label>
+        <select id="restricoes">
+          <option value="nenhuma">Nenhuma</option>
+          <option value="vegetariano">Vegetariano</option>
+          <option value="semGluten">Sem Glúten</option>
+          <option value="lowCarb">Low Carb</option>
+          <option value="ceto">Ceto</option>
+          <option value="paleo">Paleo</option>
+          <option value="semLactose">Sem Lactose</option>
+          <option value="diabetico">Diabético</option>
+        </select>
+        <button onclick="gerarPlano()">Gerar Plano</button>
+      </div>
+      <div class="card" style="text-align: center;">
+        <h2>Assistente Inteligente</h2>
+        <p>Acesse o assistente para um planejamento alimentar inteligente:</p>
+        <button onclick="window.open('https://chatgpt.com/g/g-67b5dfe4ca3081919fcd07e22541a3f1-assistente-de-planejamento-alimentar', '_blank')">
+          Acessar Assistente
+        </button>
+      </div>
+    </div>
+
+    <!-- Card de Plano de Refeições -->
+    <div class="card">
+      <h2>Plano de Refeições</h2>
+      <div id="plano" class="planoRefeicoes"></div>
+    </div>
+  </main>
+
+  <script>
+    /*
+      OBJETO COM AS REFEIÇÕES E RECEITAS
+      Cada chave corresponde a uma restrição alimentar e contém 10 receitas com instruções detalhadas.
+    */
+    const refeicoes = {
+      // Categoria "nenhuma" – receitas sem limitações (10 receitas)
+      nenhuma: [
+        {
+          nome: "Omelete com queijo",
+          ingredientes: "2 ovos, 30g de queijo muçarela ou branco, 1 fatia de pão integral, Sal e pimenta a gosto",
+          modoPreparo: [
+            "Quebre os ovos em uma tigela e bata vigorosamente com um garfo ou batedor manual, adicionando uma pitada de sal e pimenta.",
+            "Incorpore o queijo cortado em cubinhos ou ralado, misturando delicadamente para manter a textura.",
+            "Aqueça uma frigideira antiaderente em fogo médio e, se necessário, unte levemente com um pouco de azeite.",
+            "Despeje a mistura de ovos e deixe cozinhar por cerca de 2 minutos, até que as bordas comecem a firmar.",
+            "Com cuidado, vire a omelete utilizando uma espátula e cozinhe por mais 1-2 minutos até dourar por igual.",
+            "Retire do fogo e sirva imediatamente acompanhada do pão integral torrado."
+          ],
+          dicas: "Para um toque especial, adicione tomates cereja cortados ou cebola picada finamente durante o preparo.",
+          tempoPreparo: "15 minutos",
+          rendimento: "1 omelete (1 porção)"
+        },
+        {
+          nome: "Bife com legumes",
+          ingredientes: "200g de bife (contra-filé, alcatra ou patinho), 1 cenoura, 1/2 cabeça de brócolis, 1 batata média, 1 colher de sopa de azeite, Sal, pimenta e ervas a gosto",
+          modoPreparo: [
+            "Tempere o bife com sal, pimenta e ervas de sua preferência por pelo menos 10 minutos.",
+            "Enquanto o bife absorve os temperos, corte a cenoura em rodelas, separe os buquês do brócolis e descasque a batata, cortando-a em cubos.",
+            "Aqueça uma frigideira com azeite e grelhe o bife até atingir o ponto desejado; reserve e fatie-o.",
+            "Em outra panela, refogue os legumes com um fio de azeite, sal e pimenta e, se preferir, finalize assando-os no forno a 200°C por 20-30 minutos para realçar os sabores.",
+            "Monte o prato com as fatias de bife e os legumes ao lado, finalizando com um fio de azeite extra virgem se desejar."
+          ],
+          dicas: "Substitua a batata comum por batata-doce para uma versão mais nutritiva e levemente adocicada.",
+          tempoPreparo: "35 minutos",
+          rendimento: "2 porções"
+        },
+        {
+          nome: "Salmão grelhado com batatas",
+          ingredientes: "200g de salmão, 2 batatas médias, 1 colher de sopa de azeite, Sal, pimenta e limão a gosto",
+          modoPreparo: [
+            "Tempere o salmão com sal, pimenta e um fio de azeite; reserve para absorver os temperos por 5 minutos.",
+            "Corte as batatas em rodelas finas e cozinhe em água fervente com sal até que fiquem macias, aproximadamente 10 minutos.",
+            "Aqueça uma frigideira antiaderente em fogo médio-alto e grelhe o salmão por cerca de 3-4 minutos de cada lado.",
+            "Em outra panela, salteie as batatas com um pouco mais de azeite, sal e pimenta.",
+            "Monte o prato dispondo o salmão ao lado das batatas, regando com suco de limão fresco."
+          ],
+          dicas: "Experimente finalizar com um toque de ervas frescas, como dill ou salsinha, para realçar o sabor do salmão.",
+          tempoPreparo: "25 minutos",
+          rendimento: "2 porções"
+        },
+        {
+          nome: "Frango com arroz e salada",
+          ingredientes: "200g de peito de frango, 1 xícara de arroz integral, folhas de alface, 1 tomate, 1/2 pepino, Sal, pimenta e ervas a gosto",
+          modoPreparo: [
+            "Tempere o peito de frango com sal, pimenta, alho e ervas; deixe descansar por 10 minutos.",
+            "Grelhe o frango em uma frigideira com um fio de azeite até dourar e, em seguida, corte-o em tiras.",
+            "Cozinhe o arroz integral conforme as instruções da embalagem, utilizando água e uma pitada de sal.",
+            "Lave e corte o alface, o tomate e o pepino; misture em uma tigela para formar uma salada fresca.",
+            "Monte o prato colocando o arroz, as tiras de frango e a salada, finalizando com um toque extra de limão ou azeite se preferir."
+          ],
+          dicas: "Para intensificar o sabor da salada, adicione folhas de manjericão ou hortelã.",
+          tempoPreparo: "30 minutos",
+          rendimento: "2 porções"
+        },
+        {
+          nome: "Arroz com legumes",
+          ingredientes: "1 xícara de arroz, 1 cenoura, 1 abobrinha, 1/2 xícara de ervilhas, 1/2 cebola, 1 dente de alho, Sal e pimenta a gosto",
+          modoPreparo: [
+            "Cozinhe o arroz em água com uma pitada de sal até ficar macio e soltinho.",
+            "Enquanto isso, pique a cebola e o alho; refogue-os em azeite até dourarem.",
+            "Corte a cenoura e a abobrinha em cubos pequenos e adicione ao refogado junto com as ervilhas.",
+            "Cozinhe os legumes em fogo médio até que fiquem macios, mas ainda conservem sua cor e textura.",
+            "Misture o arroz cozido com os legumes, ajustando o tempero com sal, pimenta e, se desejar, uma pitada de curry ou páprica defumada."
+          ],
+          dicas: "Uma leve adição de ervas frescas, como salsinha ou coentro, pode deixar o prato ainda mais aromático.",
+          tempoPreparo: "25 minutos",
+          rendimento: "2 porções"
+        },
+        {
+          nome: "Panqueca de aveia",
+          ingredientes: "1 xícara de aveia em flocos finos, 2 ovos, 1 xícara de leite, 1 colher de sopa de mel (opcional), Canela a gosto",
+          modoPreparo: [
+            "Em uma tigela, misture a aveia, os ovos e o leite até formar uma massa homogênea; acrescente a canela e o mel, se utilizar.",
+            "Deixe a massa descansar por 5 minutos para que a aveia absorva os líquidos.",
+            "Aqueça uma frigideira antiaderente em fogo médio e unte levemente com um pouco de azeite ou manteiga.",
+            "Despeje uma concha da massa e espalhe de forma uniforme, cozinhando por cerca de 2-3 minutos até que as bordas comecem a soltar.",
+            "Vire a panqueca com cuidado e cozinhe por mais 2 minutos até dourar. Repita o processo com o restante da massa.",
+            "Sirva as panquecas acompanhadas de frutas frescas ou um fio extra de mel."
+          ],
+          dicas: "Para variar o sabor, experimente adicionar banana amassada ou extrato de baunilha à massa.",
+          tempoPreparo: "20 minutos",
+          rendimento: "4 panquecas pequenas"
+        },
+        {
+          nome: "Peito de Frango Grelhado com Couve",
+          ingredientes: "200g de peito de frango, 1 maço de couve, 1 colher de sopa de azeite, Sal, pimenta e limão a gosto",
+          modoPreparo: [
+            "Tempere o peito de frango com sal, pimenta e suco de limão por pelo menos 10 minutos.",
+            "Grelhe o frango em uma frigideira bem quente com um fio de azeite até que fique dourado e cozido por dentro; fatie-o em tiras.",
+            "Lave a couve, corte em tiras finas e, em outra panela, refogue-a rapidamente com um fio de azeite, sal e pimenta, apenas para murchar.",
+            "Monte o prato dispondo as tiras de frango sobre a couve refogada e, se desejar, regue com mais um pouco de limão."
+          ],
+          dicas: "Para incrementar, salpique ervas frescas picadas, como coentro ou salsinha, por cima do prato.",
+          tempoPreparo: "25 minutos",
+          rendimento: "2 porções"
+        },
+        {
+          nome: "Frango com Cogumelos",
+          ingredientes: "200g de peito de frango, 150g de cogumelos variados, 1 dente de alho, 1 colher de sopa de azeite, Sal e pimenta a gosto",
+          modoPreparo: [
+            "Corte o peito de frango em tiras finas e tempere com sal e pimenta.",
+            "Lave e fatie os cogumelos; pique o alho.",
+            "Aqueça o azeite em uma frigideira, refogue o alho por 1 minuto e adicione os cogumelos, cozinhando até que fiquem dourados e macios.",
+            "Acrescente o frango à frigideira e cozinhe em fogo médio, mexendo para que o frango absorva os sabores dos cogumelos, até ficar totalmente cozido.",
+            "Ajuste o tempero, se necessário, e sirva imediatamente."
+          ],
+          dicas: "Sirva com um toque de salsinha fresca para realçar o sabor e a apresentação do prato.",
+          tempoPreparo: "30 minutos",
+          rendimento: "2 porções"
+        },
+        {
+          nome: "Macarronada com Carne Moída",
+          ingredientes: "200g de macarrão, 250g de carne moída, 1 xícara de molho de tomate, 1 cebola média, 2 dentes de alho, Folhas de manjericão, Sal, pimenta e orégano a gosto",
+          modoPreparo: [
+            "Pique finamente a cebola e os alhos e refogue-os em azeite até ficarem transparentes.",
+            "Adicione a carne moída e cozinhe até que esteja bem dourada, mexendo para desmanchar os pedaços.",
+            "Incorpore o molho de tomate e folhas de manjericão, deixando ferver em fogo baixo por cerca de 10 minutos para que os sabores se misturem.",
+            "Enquanto isso, cozinhe o macarrão conforme as instruções da embalagem e escorra bem.",
+            "Misture o macarrão com o molho e finalize com uma pitada de orégano e queijo parmesão ralado, se desejar.",
+            "Sirva imediatamente, acompanhando de uma salada fresca."
+          ],
+          dicas: "Um toque de pimenta vermelha em flocos pode intensificar o sabor sem sobrecarregar o prato.",
+          tempoPreparo: "40 minutos",
+          rendimento: "4 porções"
+        },
+        {
+          nome: "Lasanha de Berinjela",
+          ingredientes: "2 berinjelas médias, 2 xícaras de molho de tomate, 200g de queijo mussarela, 100g de presunto, 2 dentes de alho, Sal e pimenta a gosto",
+          modoPreparo: [
+            "Corte as berinjelas em fatias finas no sentido longitudinal e grelhe-as rapidamente em uma frigideira para reduzir o amargor.",
+            "Prepare o molho refogando alho picado em azeite, incorporando o molho de tomate, sal e pimenta, e deixando cozinhar por 10 minutos.",
+            "Em um refratário, monte camadas alternadas de berinjela, molho, queijo e presunto, repetindo até terminar os ingredientes.",
+            "Leve ao forno pré-aquecido a 180°C e asse por 40 a 50 minutos até que a lasanha esteja bem gratinada e borbulhante.",
+            "Deixe descansar por 5 minutos antes de servir."
+          ],
+          dicas: "Para uma versão mais leve, substitua o presunto por peito de frango desfiado.",
+          tempoPreparo: "50 minutos",
+          rendimento: "4 porções"
+        },
+        {
+          nome: "Sopa de Legumes Variada",
+          ingredientes: "1 cenoura, 1 batata, 1/2 abóbora, 1 chuchu, 1/2 xícara de ervilhas, 1 litro de caldo de legumes, Sal, pimenta e noz-moscada a gosto",
+          modoPreparo: [
+            "Descasque e corte todos os legumes em cubos uniformes para que cozinhem por igual.",
+            "Coloque os legumes em uma panela com o caldo de legumes e leve ao fogo médio até que fiquem macios (cerca de 20-25 minutos).",
+            "Retire uma porção dos legumes e bata no liquidificador para obter um creme rústico; depois, misture de volta à panela.",
+            "Ajuste o sal, a pimenta e adicione uma pitada de noz-moscada para intensificar os sabores.",
+            "Sirva a sopa quente, acompanhada de torradas integrais, se desejar."
+          ],
+          dicas: "Para um toque extra, finalize com um fio de azeite de oliva extra virgem e ervas frescas picadas.",
+          tempoPreparo: "35 minutos",
+          rendimento: "4 porções"
+        }
+      ],
+      // Categoria "vegetariano" (10 receitas)
+      vegetariano: [
+        {
+          nome: "Tofu grelhado com quinoa",
+          ingredientes: "200g de tofu firme, 1 xícara de quinoa, 1 colher de sopa de azeite, Sal, pimenta e shoyu para marinar",
+          modoPreparo: [
+            "Corte o tofu em fatias de aproximadamente 1 cm e seque bem com papel toalha.",
+            "Marinhe as fatias de tofu com shoyu, alho picado, sal e pimenta por pelo menos 15 minutos.",
+            "Grelhe o tofu em uma frigideira antiaderente com um fio de azeite até que ambos os lados estejam dourados.",
+            "Cozinhe a quinoa em água fervente com uma pitada de sal conforme as instruções da embalagem.",
+            "Misture a quinoa cozida com o tofu grelhado e decore com ervas frescas, se desejar."
+          ],
+          dicas: "Para um sabor extra, adicione gengibre ralado à marinada.",
+          tempoPreparo: "20 minutos",
+          rendimento: "2 porções"
+        },
+        {
+          nome: "Salada de grão-de-bico",
+          ingredientes: "1 xícara de grão-de-bico cozido, 1 tomate médio, 1/2 cebola roxa, 2 colheres de sopa de azeite, Suco de 1 limão, Sal e pimenta a gosto",
+          modoPreparo: [
+            "Se o grão-de-bico estiver seco, deixe-o de molho e cozinhe até ficar macio.",
+            "Pique o tomate e a cebola roxa em cubos pequenos e misture com o grão-de-bico em uma tigela.",
+            "Adicione o azeite e o suco de limão, mexendo bem para incorporar os temperos.",
+            "Tempere com sal e pimenta e deixe repousar por 5 minutos antes de servir."
+          ],
+          dicas: "Adicione folhas de hortelã ou salsa para um frescor extra.",
+          tempoPreparo: "15 minutos",
+          rendimento: "2 a 3 porções"
+        },
+        {
+          nome: "Espaguete de abobrinha com molho pesto",
+          ingredientes: "1 abobrinha grande, 1/2 xícara de molho pesto (manjericão, azeite, alho, castanhas e queijo parmesão), Sal e pimenta a gosto",
+          modoPreparo: [
+            "Utilize um cortador em espiral para transformar a abobrinha em fios semelhantes a macarrão.",
+            "Aqueça levemente os fios de abobrinha em uma frigideira com um fio de azeite por cerca de 2 minutos, apenas para amolecer levemente sem perder a crocância.",
+            "Misture o espaguete de abobrinha com o molho pesto preparado ou comprado, ajustando o sal e a pimenta.",
+            "Sirva imediatamente, podendo finalizar com folhas de manjericão fresco."
+          ],
+          dicas: "Para um pesto mais vibrante, use manjericão fresco recém-picado.",
+          tempoPreparo: "10 minutos",
+          rendimento: "2 porções"
+        },
+        {
+          nome: "Hambúrguer de grão-de-bico",
+          ingredientes: "1 xícara de grão-de-bico cozido, 1 dente de alho, Sal, pimenta, 2 colheres de sopa de farinha de rosca, 1 colher de sopa de azeite",
+          modoPreparo: [
+            "Amasse o grão-de-bico em um processador ou com um garfo até formar uma pasta rústica.",
+            "Misture o alho picado, sal, pimenta e a farinha de rosca para ajudar na liga da massa.",
+            "Modele a mistura em forma de hambúrgueres de tamanho médio.",
+            "Aqueça uma frigideira com azeite e frite os hambúrgueres por cerca de 4-5 minutos de cada lado, até ficarem dourados.",
+            "Sirva em um pão integral ou sobre uma cama de folhas verdes, conforme sua preferência."
+          ],
+          dicas: "Se desejar, adicione ervas frescas picadas como coentro ou salsinha na mistura.",
+          tempoPreparo: "25 minutos",
+          rendimento: "4 hambúrgueres médios"
+        },
+        {
+          nome: "Feijão com arroz e legumes",
+          ingredientes: "1 xícara de feijão cozido, 1 xícara de arroz integral, 1 cenoura, 1/2 xícara de vagem, 1/2 cabeça de couve-flor, Temperos a gosto",
+          modoPreparo: [
+            "Cozinhe o feijão com alho, cebola e sal até que fique macio e bem temperado.",
+            "Cozinhe o arroz integral em água com sal conforme as instruções da embalagem.",
+            "Corte os legumes (cenoura, vagem, couve-flor) em pedaços e cozinhe no vapor ou refogue em um pouco de azeite até ficarem macios, mas mantendo a cor vibrante.",
+            "Misture o arroz com os legumes e, na hora de servir, disponha o feijão por cima, ajustando os temperos finais."
+          ],
+          dicas: "Finalize com salsinha picada para dar frescor ao prato.",
+          tempoPreparo: "40 minutos",
+          rendimento: "2 a 3 porções"
+        },
+        {
+          nome: "Curry de vegetais",
+          ingredientes: "1 colher de sopa de curry em pó, 1 xícara de leite de coco, 1 batata média, 1 cenoura, 1/2 abóbora, 1 cebola, Sal e pimenta a gosto",
+          modoPreparo: [
+            "Pique a cebola e refogue em um pouco de azeite até ficar translúcida.",
+            "Adicione o curry em pó e mexa rapidamente para liberar os aromas das especiarias.",
+            "Corte a batata, a cenoura e a abóbora em cubos e adicione à panela, misturando bem.",
+            "Despeje o leite de coco e deixe cozinhar em fogo médio até que os legumes estejam macios e o molho encorpado, aproximadamente 20-25 minutos.",
+            "Ajuste os temperos com sal e pimenta e sirva acompanhado de arroz integral ou quinoa."
+          ],
+          dicas: "Para um curry com mais proteína, acrescente grão-de-bico cozido no final do cozimento.",
+          tempoPreparo: "30 minutos",
+          rendimento: "3 porções"
+        },
+        {
+          nome: "Salada de Couve com Quinoa",
+          ingredientes: "1 maço de couve, 1 xícara de quinoa, 1 cenoura, Suco de 1 limão, 2 colheres de sopa de azeite, Sal e pimenta a gosto",
+          modoPreparo: [
+            "Cozinhe a quinoa em água com sal conforme as instruções e deixe esfriar.",
+            "Lave a couve, retire os talos mais grossos e corte em tiras finas; rale a cenoura.",
+            "Misture a quinoa com a couve e a cenoura em uma tigela grande.",
+            "Tempere com suco de limão, azeite, sal e pimenta, misturando bem para que os sabores se incorporem.",
+            "Deixe a salada descansar por alguns minutos antes de servir para absorver os temperos."
+          ],
+          dicas: "Para um toque extra, adicione sementes de girassol torradas por cima.",
+          tempoPreparo: "20 minutos",
+          rendimento: "2 porções"
+        },
+        {
+          nome: "Sopa Cremosa de Abóbora",
+          ingredientes: "500g de abóbora, 1 cebola média, 2 dentes de alho, 1 litro de caldo de legumes, 1/2 xícara de creme de leite ou creme vegetal, Sal e pimenta a gosto",
+          modoPreparo: [
+            "Descasque e corte a abóbora, a cebola e os alhos em cubos pequenos.",
+            "Refogue a cebola e o alho em azeite até ficarem macios e levemente dourados.",
+            "Adicione a abóbora e o caldo de legumes, cozinhando em fogo médio até que a abóbora esteja bem macia, cerca de 20 minutos.",
+            "Bata toda a mistura no liquidificador até obter um creme liso e homogêneo.",
+            "Retorne o creme para a panela, aqueça novamente e incorpore o creme de leite, ajustando sal e pimenta.",
+            "Sirva quente, decorado com um fio de azeite e ervas frescas."
+          ],
+          dicas: "Uma pitada de noz-moscada ralada na hora pode intensificar o sabor desta sopa.",
+          tempoPreparo: "35 minutos",
+          rendimento: "3 porções"
+        },
+        {
+          nome: "Quiche de Legumes sem Massa",
+          ingredientes: "3 ovos, 1/2 xícara de leite, 100g de queijo (muçarela ou outro de sua preferência), 1 xícara de legumes variados pré-cozidos (brócolis, cenoura, ervilhas), Sal e pimenta a gosto",
+          modoPreparo: [
+            "Pré-aqueça o forno a 180°C.",
+            "Bata os ovos com o leite em uma tigela, adicionando sal e pimenta.",
+            "Misture os legumes pré-cozidos e o queijo na mistura de ovos, garantindo que fiquem distribuídos de maneira uniforme.",
+            "Despeje a mistura em uma forma untada e asse por aproximadamente 45 minutos, ou até que a quiche esteja dourada e firme no centro.",
+            "Retire do forno e deixe esfriar um pouco antes de cortar e servir."
+          ],
+          dicas: "Sirva a quiche acompanhada de uma salada fresca para uma refeição completa.",
+          tempoPreparo: "45 minutos",
+          rendimento: "6 porções"
+        },
+        {
+          nome: "Panqueca de Espinafre",
+          ingredientes: "2 ovos, 1/2 xícara de farinha, 1/2 xícara de leite, 1 xícara de espinafre fresco picado, Sal, pimenta e um fio de azeite",
+          modoPreparo: [
+            "Bata os ovos com o leite e a farinha até formar uma massa lisa, sem grumos.",
+            "Incorpore o espinafre picado e tempere com sal e pimenta.",
+            "Aqueça uma frigideira antiaderente com um pouco de azeite e despeje pequenas porções da massa.",
+            "Cozinhe cada panqueca por cerca de 2-3 minutos de cada lado, até que estejam douradas e firmes.",
+            "Sirva com um molho leve de iogurte temperado com ervas."
+          ],
+          dicas: "Para variar, você pode adicionar um pouco de noz-moscada ou pimenta caiena à massa.",
+          tempoPreparo: "25 minutos",
+          rendimento: "1 omelete (2 porções)"
+        }
+      ],
+      // Categoria "semGluten" (10 receitas)
+      semGluten: [
+        {
+          nome: "Risoto de quinoa com cogumelos",
+          ingredientes: "1 xícara de quinoa, 150g de cogumelos (shitake ou shimeji), 1/2 cebola, 1 dente de alho, 2 xícaras de caldo de legumes (sem glúten), Sal e pimenta a gosto",
+          modoPreparo: [
+            "Pique a cebola e o alho e refogue-os em um fio de azeite até ficarem translúcidos.",
+            "Adicione os cogumelos fatiados e cozinhe até que comecem a dourar, intensificando o sabor.",
+            "Incorpore a quinoa e mexa bem para que fique envolvida no refogado.",
+            "Adicione o caldo de legumes aos poucos, mexendo sempre, até que a quinoa esteja macia e o risoto cremoso, cerca de 20 minutos.",
+            "Ajuste os temperos e sirva imediatamente, decorando com ervas frescas se desejar."
+          ],
+          dicas: "Experimente finalizar com um fio de azeite extra virgem e uma pitada de pimenta-do-reino moída na hora.",
+          tempoPreparo: "25 minutos",
+          rendimento: "2 porções"
+        },
+        {
+          nome: "Frango grelhado com purê de batata-doce",
+          ingredientes: "200g de peito de frango, 2 batatas-doce médias, 1 colher de sopa de azeite, Sal e pimenta a gosto",
+          modoPreparo: [
+            "Tempere o frango com sal, pimenta e um fio de azeite, deixando marinar por 10 minutos.",
+            "Grelhe o frango em uma frigideira até que esteja dourado dos dois lados e cozido por dentro.",
+            "Cozinhe as batatas-doce em água fervente até ficarem macias, aproximadamente 20 minutos, e depois amasse-as com um pouco de sal e azeite para formar um purê.",
+            "Monte o prato servindo o frango fatiado acompanhado do purê de batata-doce, decorando com salsinha picada."
+          ],
+          dicas: "Para variar, adicione um toque de noz-moscada ao purê de batata-doce.",
+          tempoPreparo: "30 minutos",
+          rendimento: "2 porções"
+        },
+        {
+          nome: "Salmão ao Forno com Ervas",
+          ingredientes: "200g de salmão, Suco de 1 limão, Ervas frescas (alecrim e tomilho), 1 colher de sopa de azeite, Sal e pimenta a gosto",
+          modoPreparo: [
+            "Tempere o salmão com suco de limão, ervas, sal e pimenta, deixando marinar por 15 minutos.",
+            "Pré-aqueça o forno a 200°C e disponha o salmão em uma assadeira.",
+            "Regue com azeite e asse por cerca de 20 minutos ou até o salmão ficar levemente dourado e macio.",
+            "Sirva acompanhado de uma salada verde fresca."
+          ],
+          dicas: "O limão ajuda a realçar o sabor do salmão e garante que ele não resseque durante o preparo.",
+          tempoPreparo: "25 minutos",
+          rendimento: "2 porções"
+        },
+        {
+          nome: "Ensopado de Legumes Sem Glúten",
+          ingredientes: "1 batata, 1 cenoura, 1/2 abóbora, 1/2 xícara de vagem, 1 tomate médio, 2 xícaras de caldo de legumes sem glúten, 1 dente de alho, 1/2 cebola, Sal e pimenta a gosto",
+          modoPreparo: [
+            "Corte todos os legumes em pedaços médios para garantir um cozimento uniforme.",
+            "Em uma panela, refogue a cebola e o alho picados em um fio de azeite até ficarem dourados.",
+            "Adicione os legumes e refogue por alguns minutos para realçar os sabores.",
+            "Acrescente o tomate picado e o caldo de legumes, deixando cozinhar em fogo médio-baixo até que os legumes estejam macios, cerca de 30-35 minutos.",
+            "Ajuste o sal e a pimenta e sirva quente."
+          ],
+          dicas: "Esta receita é perfeita para dias frios e pode ser acompanhada por um pouco de pão sem glúten.",
+          tempoPreparo: "40 minutos",
+          rendimento: "4 porções"
+        },
+        {
+          nome: "Polenta Cremosa com Molho de Tomate",
+          ingredientes: "1 xícara de polenta, 4 xícaras de água, 1 pitada de sal, 1 xícara de molho de tomate, Folhas de manjericão, 1 colher de sopa de azeite",
+          modoPreparo: [
+            "Leve a água com sal para ferver e, aos poucos, adicione a polenta, mexendo constantemente para evitar grumos.",
+            "Cozinhe a polenta em fogo baixo por cerca de 20 minutos, mexendo sempre, até que ela engrosse e fique cremosa.",
+            "Enquanto isso, aqueça o molho de tomate em outra panela com um pouco de azeite e adicione folhas de manjericão para aromatizar.",
+            "Misture a polenta com o molho ou sirva o molho por cima, conforme sua preferência, e finalize com um fio de azeite extra virgem."
+          ],
+          dicas: "Para incrementar, você pode adicionar um toque de queijo parmesão sem glúten na finalização.",
+          tempoPreparo: "30 minutos",
+          rendimento: "4 porções"
+        },
+        {
+          nome: "Frango ao Limão Sem Glúten",
+          ingredientes: "200g de peito de frango, Suco de 1 limão, 1 dente de alho, 1 colher de sopa de azeite, Sal, pimenta e ervas finas a gosto",
+          modoPreparo: [
+            "Tempere o frango com suco de limão, alho picado, sal, pimenta e ervas finas por 15 minutos.",
+            "Grelhe o frango em uma frigideira com azeite até que fique bem dourado por fora e cozido por dentro.",
+            "Sirva o frango fatiado acompanhado de legumes salteados ou uma salada verde fresca."
+          ],
+          dicas: "A marinada ajuda a manter o frango suculento e saboroso sem o uso de glúten.",
+          tempoPreparo: "25 minutos",
+          rendimento: "2 porções"
+        },
+        {
+          nome: "Creme de Cenoura com Gengibre",
+          ingredientes: "3 cenouras médias, 1 batata média, 3 xícaras de caldo de legumes sem glúten, 1 pedaço pequeno de gengibre fresco, Sal e pimenta a gosto",
+          modoPreparo: [
+            "Descasque e corte as cenouras e a batata em cubos pequenos.",
+            "Cozinhe os legumes no caldo de legumes até que estejam bem macios, cerca de 20-25 minutos.",
+            "Bata toda a mistura no liquidificador com o gengibre até obter um creme liso.",
+            "Volte o creme para a panela, aqueça em fogo baixo e ajuste os temperos.",
+            "Sirva o creme quente, decorado com salsinha picada."
+          ],
+          dicas: "O gengibre confere um toque levemente picante e é ótimo para a digestão.",
+          tempoPreparo: "30 minutos",
+          rendimento: "3 porções"
+        },
+        {
+          nome: "Bife Acebolado",
+          ingredientes: "200g de bife de sua escolha, 1 cebola grande, 1 colher de sopa de azeite, Sal, pimenta e salsinha a gosto",
+          modoPreparo: [
+            "Tempere o bife com sal e pimenta e deixe descansar por 5 minutos.",
+            "Aqueça o azeite em uma frigideira e frite o bife até atingir o ponto desejado.",
+            "Retire o bife e, na mesma frigideira, adicione a cebola fatiada finamente e refogue até que fique dourada e caramelizada.",
+            "Volte o bife para a frigideira para que se misture com as cebolas, finalize com salsinha picada e sirva imediatamente."
+          ],
+          dicas: "Sirva acompanhado de uma porção de arroz ou legumes grelhados para um prato balanceado.",
+          tempoPreparo: "20 minutos",
+          rendimento: "2 porções"
+        },
+        {
+          nome: "Omelete de Ervas Finas",
+          ingredientes: "2 ovos, 1 colher de sopa de ervas finas (salsinha, cebolinha e manjericão), Sal, pimenta e 1 colher de chá de azeite",
+          modoPreparo: [
+            "Bata os ovos em uma tigela com sal, pimenta e as ervas finas picadas até que fiquem bem misturados.",
+            "Aqueça uma frigideira antiaderente com o azeite e despeje a mistura de ovos, espalhando uniformemente.",
+            "Cozinhe em fogo médio até que as bordas comecem a firmar e, com uma espátula, vire cuidadosamente a omelete para dourar o outro lado.",
+            "Dobre a omelete e sirva imediatamente."
+          ],
+          dicas: "Esta receita é ótima para um café da manhã nutritivo e pode ser servida com uma fatia de pão sem glúten.",
+          tempoPreparo: "10 minutos",
+          rendimento: "1 omelete (2 porções)"
+        },
+        {
+          nome: "Salada de Frango com Abacate",
+          ingredientes: "200g de peito de frango, 1 abacate médio, 1 tomate, Folhas de alface, Suco de 1 limão, 1 colher de sopa de azeite, Sal e pimenta a gosto",
+          modoPreparo: [
+            "Tempere e grelhe o peito de frango até que esteja bem dourado; deixe descansar e depois corte em tiras.",
+            "Corte o abacate em cubos e o tomate em fatias finas.",
+            "Lave as folhas de alface e disponha-as em uma tigela grande.",
+            "Misture o frango, o abacate e o tomate; tempere com suco de limão, azeite, sal e pimenta.",
+            "Misture delicadamente e sirva a salada imediatamente."
+          ],
+          dicas: "Esta salada é ideal para um almoço leve e refrescante; adicione também folhas de rúcula se desejar.",
+          tempoPreparo: "20 minutos",
+          rendimento: "2 porções"
+        }
+      ],
+      // Categoria "lowCarb" (10 receitas)
+      lowCarb: [
+        {
+          nome: "Macarrão de abobrinha com frango",
+          ingredientes: "1 abobrinha grande, 200g de frango em cubos, 1 dente de alho, 1 colher de sopa de azeite, 2 colheres de sopa de queijo ralado (opcional), Sal e pimenta a gosto",
+          modoPreparo: [
+            "Utilize um cortador em espiral para transformar a abobrinha em fios que imitam macarrão.",
+            "Tempere o frango com sal e pimenta; em uma frigideira, refogue o alho em azeite e adicione o frango, cozinhando até dourar por todos os lados.",
+            "Acrescente os fios de abobrinha e cozinhe por 3-4 minutos, mexendo levemente para que não murchem demais.",
+            "Finalize polvilhando queijo ralado se desejar, ajustando o sal e a pimenta, e sirva imediatamente."
+          ],
+          dicas: "Sirva com um molho leve de tomate caseiro para um toque especial sem adicionar muitos carboidratos.",
+          tempoPreparo: "20 minutos",
+          rendimento: "2 porções"
+        },
+        {
+          nome: "Couve-flor gratinada com queijo",
+          ingredientes: "1 cabeça de couve-flor, 100g de queijo (de sua escolha), 1 colher de sopa de manteiga, 1/4 xícara de leite (opcional), Sal e pimenta a gosto",
+          modoPreparo: [
+            "Separe a couve-flor em buquês e cozinhe em água fervente com sal até ficar macia, cerca de 10 minutos.",
+            "Escorra bem e coloque a couve-flor em um refratário untado.",
+            "Em uma panela, derreta a manteiga, adicione o leite e o queijo, mexendo até formar um creme homogêneo; tempere com sal e pimenta.",
+            "Despeje o creme sobre a couve-flor e leve ao forno pré-aquecido a 200°C por 20-25 minutos, até gratinar levemente.",
+            "Sirva quente e aproveite o contraste entre a cremosidade e a leve crocância do gratinado."
+          ],
+          dicas: "Se desejar, adicione um toque de noz-moscada ao molho para intensificar o sabor.",
+          tempoPreparo: "30 minutos",
+          rendimento: "3 porções"
+        },
+        {
+          nome: "Omelete de Claras com Cogumelos",
+          ingredientes: "3 claras de ovo, 100g de cogumelos fatiados, 1 xícara de espinafre, Sal e pimenta, 1 colher de chá de azeite",
+          modoPreparo: [
+            "Bata as claras com uma pitada de sal e pimenta até que fiquem levemente espumosas.",
+            "Aqueça o azeite em uma frigideira e refogue os cogumelos até dourarem; acrescente o espinafre e deixe murchar.",
+            "Despeje as claras batidas sobre os legumes, cozinhando em fogo médio até que a omelete esteja firme e levemente dourada.",
+            "Dobre a omelete com cuidado e sirva imediatamente, aproveitando sua leveza e alto teor proteico."
+          ],
+          dicas: "Esta receita é perfeita para um café da manhã low carb ou lanche nutritivo.",
+          tempoPreparo: "15 minutos",
+          rendimento: "1 omelete (2 porções)"
+        },
+        {
+          nome: "Bife Grelhado com Aspargos",
+          ingredientes: "200g de bife, 100g de aspargos frescos, 1 colher de sopa de azeite, Suco de 1/2 limão, Sal e pimenta a gosto",
+          modoPreparo: [
+            "Tempere o bife com sal, pimenta e suco de limão e deixe descansar por 5 minutos.",
+            "Grelhe o bife em uma frigideira bem quente com azeite até o ponto desejado; reserve e fatie-o.",
+            "Na mesma frigideira, refogue rapidamente os aspargos com um pouco mais de azeite, sal e pimenta, por cerca de 3-4 minutos.",
+            "Monte o prato com as fatias de bife acompanhadas dos aspargos refogados."
+          ],
+          dicas: "Adicione um toque de raspas de limão sobre o prato para um frescor extra.",
+          tempoPreparo: "25 minutos",
+          rendimento: "2 porções"
+        },
+        {
+          nome: "Sopa de Abóbora Low Carb",
+          ingredientes: "400g de abóbora, 1 cebola, 2 xícaras de caldo de legumes, 1 pedaço pequeno de gengibre, Sal e pimenta a gosto",
+          modoPreparo: [
+            "Descasque e corte a abóbora em cubos; pique a cebola e rale o gengibre.",
+            "Refogue a cebola e o gengibre em um fio de azeite até amolecerem.",
+            "Adicione a abóbora e o caldo de legumes, cozinhando em fogo médio até que a abóbora esteja bem macia, aproximadamente 20 minutos.",
+            "Bata a mistura no liquidificador até obter um creme liso e volte para a panela para ajustar os temperos.",
+            "Sirva a sopa quente, sem a necessidade de adição de creme para manter o baixo teor de carboidratos."
+          ],
+          dicas: "Uma pitada de pimenta caiena pode dar um leve toque picante sem alterar o perfil low carb.",
+          tempoPreparo: "30 minutos",
+          rendimento: "3 porções"
+        },
+        {
+          nome: "Salada de Atum Low Carb",
+          ingredientes: "1 lata de atum em água, Folhas de alface, 1 tomate, 1/2 pepino, 1 colher de sopa de azeite, Suco de 1 limão, Sal e pimenta a gosto",
+          modoPreparo: [
+            "Escorra o atum e desfie-o em uma tigela.",
+            "Lave e corte o alface, o tomate e o pepino em pedaços médios.",
+            "Misture o atum com os vegetais e tempere com azeite, suco de limão, sal e pimenta.",
+            "Misture delicadamente para não desmanchar os ingredientes e sirva imediatamente."
+          ],
+          dicas: "Para variar, acrescente azeitonas fatiadas e um toque de orégano.",
+          tempoPreparo: "10 minutos",
+          rendimento: "2 porções"
+        },
+        {
+          nome: "Frango ao Curry Low Carb",
+          ingredientes: "200g de peito de frango, 1 colher de sopa de curry em pó, 1/2 xícara de leite de coco, 1 xícara de espinafre, 1 colher de sopa de azeite, Sal e pimenta a gosto",
+          modoPreparo: [
+            "Corte o peito de frango em cubos e tempere com curry, sal e pimenta.",
+            "Refogue o frango em azeite até dourar; adicione o leite de coco e deixe cozinhar por 10-15 minutos até que o frango esteja macio.",
+            "Acrescente o espinafre no final e mexa até que murche levemente.",
+            "Sirva o prato imediatamente, garantindo uma refeição leve e saborosa."
+          ],
+          dicas: "Substitua o espinafre por couve se preferir uma textura diferente.",
+          tempoPreparo: "25 minutos",
+          rendimento: "2 porções"
+        },
+        {
+          nome: "Sopa de Espinafre Low Carb",
+          ingredientes: "2 xícaras de espinafre fresco, 1 xícara de caldo de legumes, 1/4 xícara de creme de leite, Sal, pimenta e noz-moscada a gosto",
+          modoPreparo: [
+            "Cozinhe o espinafre com o caldo de legumes por 5-7 minutos até que fique macio.",
+            "Bata o espinafre com o caldo e o creme de leite no liquidificador até obter um creme homogêneo.",
+            "Aqueça a sopa em fogo baixo, ajustando os temperos com sal, pimenta e uma pitada de noz-moscada.",
+            "Sirva quente, acompanhada de uma folha de manjericão fresco se desejar."
+          ],
+          dicas: "Esta sopa é uma excelente opção para uma refeição leve e rápida.",
+          tempoPreparo: "20 minutos",
+          rendimento: "3 porções"
+        },
+        {
+          nome: "Omelete de Abobrinha Low Carb",
+          ingredientes: "2 ovos, 1 abobrinha pequena ralada, 2 colheres de sopa de queijo parmesão ralado, Sal, pimenta e 1 colher de chá de azeite",
+          modoPreparo: [
+            "Bata os ovos com sal e pimenta em uma tigela até obter uma mistura homogênea.",
+            "Incorpore a abobrinha ralada e o queijo parmesão à massa de ovos.",
+            "Aqueça uma frigideira com azeite e despeje a mistura, cozinhando em fogo médio até que as bordas fiquem firmes.",
+            "Dobre a omelete com cuidado e cozinhe por mais 1-2 minutos para que o interior fique cozido.",
+            "Sirva imediatamente, aproveitando o sabor leve e a textura macia."
+          ],
+          dicas: "Uma dica é adicionar ervas frescas picadas, como salsinha, para realçar o sabor.",
+          tempoPreparo: "15 minutos",
+          rendimento: "1 omelete (2 porções)"
+        },
+        {
+          nome: "Salada Caesar Low Carb",
+          ingredientes: "Folhas de alface romana, 200g de frango grelhado, 2 colheres de sopa de queijo parmesão ralado, Molho Caesar caseiro (feito com iogurte natural, mostarda, alho, sal e pimenta), Sem croutons",
+          modoPreparo: [
+            "Lave e corte as folhas de alface em pedaços grandes.",
+            "Corte o frango grelhado em tiras finas e disponha sobre a alface.",
+            "Regue com o molho Caesar caseiro e finalize polvilhando o queijo parmesão ralado.",
+            "Misture delicadamente e sirva imediatamente."
+          ],
+          dicas: "Se preferir, adicione algumas folhas de rúcula para uma variação no sabor.",
+          tempoPreparo: "15 minutos",
+          rendimento: "2 porções"
+        }
+      ],
+      // Categoria "ceto" (10 receitas)
+      ceto: [
+        {
+          nome: "Salada de Abacate com Frango",
+          ingredientes: "1 abacate médio, 200g de peito de frango grelhado, Folhas de alface, 1 tomate, 1 colher de sopa de azeite, Suco de 1 limão, Sal e pimenta a gosto",
+          modoPreparo: [
+            "Grelhe o peito de frango temperado com sal e pimenta até ficar dourado; corte-o em tiras finas.",
+            "Corte o abacate em cubos e o tomate em rodelas finas.",
+            "Lave as folhas de alface e disponha-as em um prato.",
+            "Misture o frango, o abacate e o tomate; tempere com azeite, suco de limão, sal e pimenta.",
+            "Misture delicadamente e sirva imediatamente."
+          ],
+          dicas: "Ideal para uma refeição leve, rica em gorduras saudáveis e proteína magra.",
+          tempoPreparo: "20 minutos",
+          rendimento: "2 porções"
+        },
+        {
+          nome: "Omelete de Espinafre e Queijo",
+          ingredientes: "2 ovos, 1/2 xícara de espinafre picado, 30g de queijo cheddar ralado, Sal e pimenta, 1 colher de chá de azeite",
+          modoPreparo: [
+            "Bata os ovos com sal e pimenta até obter uma mistura homogênea.",
+            "Adicione o espinafre picado e o queijo cheddar à massa e misture delicadamente.",
+            "Aqueça uma frigideira antiaderente com azeite e despeje a mistura, cozinhando em fogo médio até que a omelete esteja firme e dourada.",
+            "Dobre a omelete com cuidado e sirva quente."
+          ],
+          dicas: "Esta receita é excelente para um café da manhã ou almoço rápido e rico em proteínas.",
+          tempoPreparo: "15 minutos",
+          rendimento: "1 omelete (2 porções)"
+        },
+        {
+          nome: "Sopa Cremosa de Brócolis",
+          ingredientes: "300g de brócolis, 1/2 xícara de creme de leite, 2 xícaras de caldo de legumes, Sal, pimenta e noz-moscada a gosto",
+          modoPreparo: [
+            "Cozinhe o brócolis no caldo de legumes até ficar bem macio, cerca de 15 minutos.",
+            "Bata o brócolis com o creme de leite no liquidificador até obter um creme homogêneo.",
+            "Volte o creme para a panela, aqueça em fogo baixo e ajuste os temperos com sal, pimenta e uma pitada de noz-moscada.",
+            "Sirva quente, decorado com um fio de azeite e folhas de salsinha."
+          ],
+          dicas: "Esta sopa é reconfortante e muito nutritiva para uma refeição ceto.",
+          tempoPreparo: "25 minutos",
+          rendimento: "3 porções"
+        },
+        {
+          nome: "Bife com Manteiga de Alho",
+          ingredientes: "200g de bife, 1 colher de sopa de manteiga, 1 dente de alho picado, Sal, pimenta e ervas finas a gosto",
+          modoPreparo: [
+            "Tempere o bife com sal e pimenta e grelhe-o em fogo alto até atingir o ponto desejado.",
+            "Em uma panela pequena, derreta a manteiga com o alho e as ervas finas, formando uma manteiga composta.",
+            "Regue o bife com a manteiga de alho enquanto ele descansa por alguns minutos antes de fatiar.",
+            "Sirva imediatamente, acompanhando de uma salada fresca ou vegetais grelhados."
+          ],
+          dicas: "A manteiga de alho intensifica o sabor do bife sem adicionar carboidratos extras.",
+          tempoPreparo: "20 minutos",
+          rendimento: "2 porções"
+        },
+        {
+          nome: "Salada de Folhas com Queijo e Nozes",
+          ingredientes: "Folhas verdes variadas, 50g de queijo azul em cubos, 30g de nozes picadas, 1 colher de sopa de azeite, 1 colher de sopa de vinagre balsâmico, Sal e pimenta a gosto",
+          modoPreparo: [
+            "Lave e seque bem as folhas verdes e disponha-as em uma tigela grande.",
+            "Acrescente o queijo azul e as nozes picadas sobre as folhas.",
+            "Misture o azeite e o vinagre balsâmico, temperando com sal e pimenta, e regue a salada.",
+            "Misture delicadamente e sirva imediatamente."
+          ],
+          dicas: "Esta salada é rica em gorduras saudáveis e uma excelente opção para uma refeição ceto leve.",
+          tempoPreparo: "10 minutos",
+          rendimento: "2 porções"
+        },
+        {
+          nome: "Camarão ao Alho e Limão",
+          ingredientes: "200g de camarão limpo, 2 dentes de alho fatiados, Suco de 1 limão, 1 colher de sopa de azeite, Sal, pimenta e salsinha picada a gosto",
+          modoPreparo: [
+            "Tempere os camarões com sal, pimenta e suco de limão por cerca de 10 minutos.",
+            "Em uma frigideira, aqueça o azeite e refogue o alho até dourar levemente.",
+            "Adicione os camarões e cozinhe por 3-4 minutos, mexendo para que cozinhem por igual.",
+            "Finalize com salsinha picada e sirva imediatamente."
+          ],
+          dicas: "Cozinhe os camarões rapidamente para evitar que fiquem borrachudos.",
+          tempoPreparo: "15 minutos",
+          rendimento: "3 porções"
+        },
+        {
+          nome: "Creme de Abacate com Cacau",
+          ingredientes: "1 abacate maduro, 1 colher de sopa de cacau em pó sem açúcar, Adoçante a gosto, 1/2 xícara de leite de amêndoas, 1/2 colher de chá de essência de baunilha",
+          modoPreparo: [
+            "Corte o abacate ao meio, retire a polpa e coloque no liquidificador.",
+            "Adicione o cacau em pó, o adoçante, o leite de amêndoas e a essência de baunilha.",
+            "Bata tudo até obter um creme liso e homogêneo.",
+            "Transfira para um recipiente e refrigere por cerca de 20 minutos antes de servir como sobremesa ou lanche."
+          ],
+          dicas: "Esta sobremesa é rica em gorduras saudáveis e ideal para os dias quentes.",
+          tempoPreparo: "10 minutos",
+          rendimento: "2 porções"
+        },
+        {
+          nome: "Salmão ao Forno com Crosta de Amêndoas",
+          ingredientes: "200g de salmão, 2 colheres de sopa de amêndoas trituradas, 1 colher de chá de mostarda Dijon, 1 colher de chá de mel, Sal e pimenta a gosto",
+          modoPreparo: [
+            "Misture a mostarda, o mel, sal e pimenta em uma tigela pequena.",
+            "Cubra o salmão com essa mistura e, em seguida, pressione as amêndoas trituradas sobre o peixe, formando uma crosta.",
+            "Leve o salmão ao forno pré-aquecido a 200°C por cerca de 20-25 minutos, até que esteja cozido e a crosta levemente dourada.",
+            "Retire do forno e sirva com uma salada verde fresca."
+          ],
+          dicas: "A crosta de amêndoas adiciona uma textura crocante sem comprometer o perfil ceto.",
+          tempoPreparo: "25 minutos",
+          rendimento: "2 porções"
+        },
+        {
+          nome: "Frango Recheado com Espinafre e Queijo",
+          ingredientes: "2 peitos de frango, 1/2 xícara de espinafre picado, 50g de queijo mussarela, Sal, pimenta e 1 colher de sopa de azeite",
+          modoPreparo: [
+            "Abra os peitos de frango, criando um bolso para o recheio.",
+            "Misture o espinafre picado com o queijo e tempere com um pouco de sal e pimenta.",
+            "Recheie os peitos de frango com essa mistura e feche com palitos ou costure com barbante de cozinha.",
+            "Grelhe ou asse o frango em forno pré-aquecido a 200°C por cerca de 30 minutos, até que esteja completamente cozido e dourado.",
+            "Retire do forno, deixe descansar por alguns minutos e sirva fatiado."
+          ],
+          dicas: "O recheio pode ser incrementado com ervas frescas, como manjericão ou orégano, para um sabor ainda mais marcante.",
+          tempoPreparo: "30 minutos",
+          rendimento: "2 porções"
+        },
+        {
+          nome: "Omelete de Cogumelos e Espinafre",
+          ingredientes: "2 ovos, 50g de cogumelos fatiados, 1/2 xícara de espinafre, 1 colher de sopa de queijo parmesão, Sal e pimenta, 1 colher de chá de azeite",
+          modoPreparo: [
+            "Bata os ovos em uma tigela com uma pitada generosa de sal e pimenta.",
+            "Aqueça o azeite em uma frigideira e refogue os cogumelos com o espinafre até que fiquem macios e levemente dourados.",
+            "Despeje os ovos batidos sobre os vegetais, espalhando uniformemente e polvilhe o queijo parmesão por cima.",
+            "Cozinhe em fogo médio até que a omelete esteja firme e, com cuidado, dobre-a para servir.",
+            "Sirva imediatamente enquanto ainda estiver quente."
+          ],
+          dicas: "Para uma versão ainda mais cremosa, adicione uma colher de sopa de leite integral à mistura dos ovos.",
+          tempoPreparo: "15 minutos",
+          rendimento: "1 omelete (2 porções)"
+        }
+      ],
+      // Categoria "paleo" (10 receitas)
+      paleo: [
+        {
+          nome: "Carne de Cordeiro com Legumes Assados",
+          ingredientes: "300g de carne de cordeiro, 1 cenoura, 1 abobrinha, 1 colher de chá de alecrim, 1 colher de chá de tomilho, 1 colher de sopa de azeite, Sal e pimenta a gosto",
+          modoPreparo: [
+            "Tempere a carne de cordeiro com sal, pimenta, alecrim e tomilho por pelo menos 15 minutos.",
+            "Corte a cenoura e a abobrinha em pedaços grandes e misture com azeite, sal e pimenta.",
+            "Disponha a carne e os legumes em uma assadeira e asse em forno pré-aquecido a 200°C por cerca de 40-45 minutos, ou até dourar e ficar macio.",
+            "Retire do forno, deixe descansar por 5 minutos e sirva imediatamente."
+          ],
+          dicas: "Este prato é perfeito para um jantar robusto; acompanhe com uma salada verde leve.",
+          tempoPreparo: "45 minutos",
+          rendimento: "3 porções"
+        },
+        {
+          nome: "Salada de Frutas e Nozes",
+          ingredientes: "1 maçã, 1 pera, 1 xícara de uvas, 30g de nozes, Folhas verdes (alface ou rúcula), 1 colher de chá de mel, Suco de 1/2 limão",
+          modoPreparo: [
+            "Lave e corte a maçã e a pera em cubos; corte as uvas ao meio, se forem grandes.",
+            "Misture as frutas com as folhas verdes e as nozes em uma tigela grande.",
+            "Tempere com o mel e o suco de limão, misturando delicadamente para não amassar as frutas.",
+            "Sirva imediatamente como uma refeição refrescante ou sobremesa."
+          ],
+          dicas: "Para um toque diferente, acrescente canela em pó sobre as frutas antes de servir.",
+          tempoPreparo: "15 minutos",
+          rendimento: "2 porções"
+        },
+        {
+          nome: "Peito de Frango com Ervas e Couve-Flor",
+          ingredientes: "200g de peito de frango, 1/2 cabeça de couve-flor, 1 dente de alho, Ervas frescas (alecrim, tomilho), 1 colher de sopa de azeite, Sal e pimenta a gosto",
+          modoPreparo: [
+            "Tempere o peito de frango com sal, pimenta, alho picado e as ervas frescas; deixe marinar por 10 minutos.",
+            "Grelhe o frango em uma frigideira com azeite até ficar bem dourado e cozido por dentro.",
+            "Separe a couve-flor em buquês e cozinhe no vapor ou em água fervente até que fiquem macios, cerca de 10-12 minutos.",
+            "Monte o prato com o frango fatiado acompanhado da couve-flor temperada com um fio de azeite e uma pitada de sal.",
+            "Sirva imediatamente."
+          ],
+          dicas: "Finalize com um toque de limão para realçar os sabores naturais dos ingredientes.",
+          tempoPreparo: "30 minutos",
+          rendimento: "2 porções"
+        },
+        {
+          nome: "Bife de Contra-filé com Aspargos",
+          ingredientes: "200g de contra-filé, 100g de aspargos, 1 colher de chá de azeite, Sal, pimenta e alecrim a gosto",
+          modoPreparo: [
+            "Tempere o bife com sal, pimenta e algumas folhas de alecrim e deixe descansar por 5 minutos.",
+            "Grelhe o bife em uma frigideira bem quente com azeite até atingir o ponto desejado, aproximadamente 3-4 minutos de cada lado.",
+            "Na mesma frigideira, adicione os aspargos previamente limpos e refogue rapidamente por 3-4 minutos, até que fiquem levemente macios.",
+            "Fatie o bife e sirva-o acompanhado dos aspargos, finalizando com um toque de azeite extra virgem e mais alecrim fresco."
+          ],
+          dicas: "A combinação de carne suculenta e aspargos crocantes é ideal para uma refeição paleo saborosa.",
+          tempoPreparo: "20 minutos",
+          rendimento: "2 porções"
+        },
+        {
+          nome: "Peixe Grelhado com Legumes",
+          ingredientes: "200g de filé de peixe, 1 cenoura, 1/2 abobrinha, 1 colher de sopa de azeite, Suco de 1/2 limão, Sal e pimenta a gosto",
+          modoPreparo: [
+            "Tempere o filé de peixe com sal, pimenta e suco de limão por 10 minutos.",
+            "Grelhe o peixe em uma frigideira com azeite até que esteja cozido e levemente dourado.",
+            "Corte a cenoura e a abobrinha em tiras ou rodelas e refogue rapidamente em outra panela com um fio de azeite, apenas para realçar a cor e o sabor.",
+            "Sirva o peixe com os legumes salteados, finalizando com um toque extra de limão e ervas frescas."
+          ],
+          dicas: "O suco de limão ajuda a evitar que o peixe fique ressecado, mantendo-o úmido e saboroso.",
+          tempoPreparo: "25 minutos",
+          rendimento: "2 porções"
+        },
+        {
+          nome: "Sopa de Abóbora Paleo",
+          ingredientes: "500g de abóbora, 1 cebola, 2 dentes de alho, 2 xícaras de caldo de legumes caseiro, Sal, pimenta e gengibre a gosto",
+          modoPreparo: [
+            "Descasque e corte a abóbora, a cebola e os alhos em cubos pequenos.",
+            "Refogue a cebola e o alho em um pouco de azeite até ficarem macios; acrescente um pedaço pequeno de gengibre ralado.",
+            "Adicione a abóbora e o caldo de legumes, cozinhando em fogo médio até que a abóbora esteja bem macia, cerca de 20 minutos.",
+            "Bata toda a mistura no liquidificador até obter um creme liso e retorne para a panela para aquecer e ajustar os temperos.",
+            "Sirva a sopa quente, decorada com um fio de azeite e uma pitada de pimenta moída na hora."
+          ],
+          dicas: "Esta sopa é reconfortante e perfeita para dias frios, sem adição de cremes industrializados.",
+          tempoPreparo: "30 minutos",
+          rendimento: "3 porções"
+        },
+        {
+          nome: "Salada de Espinafre com Nozes e Maçã",
+          ingredientes: "2 xícaras de espinafre fresco, 1 maçã, 30g de nozes, 1 colher de sopa de azeite, 1 colher de sopa de vinagre de maçã, Sal e pimenta a gosto",
+          modoPreparo: [
+            "Lave bem o espinafre e seque as folhas.",
+            "Corte a maçã em fatias finas ou cubos, mantendo a casca para textura e nutrientes.",
+            "Misture o espinafre com a maçã e as nozes em uma tigela grande.",
+            "Tempere com azeite, vinagre, sal e pimenta, misturando delicadamente para não amassar os ingredientes.",
+            "Sirva imediatamente para aproveitar a frescura dos ingredientes."
+          ],
+          dicas: "Esta salada é leve e nutritiva, ideal como acompanhamento ou refeição principal em dias quentes.",
+          tempoPreparo: "10 minutos",
+          rendimento: "2 porções"
+        },
+        {
+          nome: "Frango Assado com Ervas e Limão",
+          ingredientes: "1 frango inteiro ou 4 coxas, Suco de 1 limão, 2 ramos de alecrim, 2 ramos de tomilho, 2 colheres de sopa de azeite, Sal e pimenta a gosto",
+          modoPreparo: [
+            "Tempere o frango com sal, pimenta, suco de limão, alecrim e tomilho, deixando marinar por pelo menos 30 minutos.",
+            "Disponha o frango em uma assadeira, regue com azeite e leve ao forno pré-aquecido a 200°C por cerca de 40 minutos (ou até dourar e ficar completamente cozido).",
+            "Durante o cozimento, regue o frango com o molho formado na assadeira para que fique mais suculento.",
+            "Retire do forno, deixe descansar por 5 minutos e sirva acompanhado de legumes ou salada."
+          ],
+          dicas: "Marinar por mais tempo realça o sabor e a maciez do frango.",
+          tempoPreparo: "45 minutos",
+          rendimento: "4 porções"
+        },
+        {
+          nome: "Camarão ao Alho e Limão Paleo",
+          ingredientes: "200g de camarão limpo, 2 dentes de alho fatiados, Suco de 1 limão, 1 colher de sopa de azeite, Sal, pimenta e coentro a gosto",
+          modoPreparo: [
+            "Tempere os camarões com suco de limão, sal e pimenta por cerca de 10 minutos.",
+            "Aqueça o azeite em uma frigideira e refogue o alho até dourar levemente.",
+            "Adicione os camarões e cozinhe rapidamente por 3-4 minutos, mexendo ocasionalmente para que cozinhem por igual.",
+            "Finalize com coentro picado e sirva imediatamente, garantindo que os camarões fiquem macios e suculentos."
+          ],
+          dicas: "Cozinhe os camarões rapidamente para que não fiquem borrachudos.",
+          tempoPreparo: "15 minutos",
+          rendimento: "3 porções"
+        },
+        {
+          nome: "Vegetais Salteados com Cogumelos",
+          ingredientes: "150g de cogumelos, 1/2 abobrinha, 1/2 pimentão, 1/2 cabeça de brócolis, 1 dente de alho, 1 colher de sopa de azeite, Sal e pimenta a gosto",
+          modoPreparo: [
+            "Corte os cogumelos, a abobrinha, o pimentão e o brócolis em tiras ou floretes uniformes.",
+            "Aqueça o azeite em uma frigideira grande e refogue o alho picado até aromatizar.",
+            "Acrescente os vegetais e salteie em fogo alto por cerca de 5-7 minutos, mexendo sempre para que cozinhem de maneira uniforme sem perder a crocância.",
+            "Tempere com sal e pimenta e sirva imediatamente como acompanhamento."
+          ],
+          dicas: "Esta receita é ideal para acompanhar carnes ou para ser consumida como um prato leve e nutritivo.",
+          tempoPreparo: "20 minutos",
+          rendimento: "3 porções"
+        }
+      ],
+      // Categoria "semLactose" (10 receitas)
+      semLactose: [
+        {
+          nome: "Peixe Assado com Ervas",
+          ingredientes: "200g de filé de peixe, Suco de 1 limão, Ervas frescas (salsinha e tomilho), 1 colher de sopa de azeite, Sal e pimenta a gosto",
+          modoPreparo: [
+            "Tempere o filé de peixe com suco de limão, sal, pimenta e as ervas frescas por 10 minutos.",
+            "Disponha o peixe em uma assadeira e regue com azeite.",
+            "Asse em forno pré-aquecido a 200°C por cerca de 20 minutos ou até o peixe ficar macio e levemente dourado.",
+            "Sirva acompanhado de uma salada fresca ou legumes grelhados."
+          ],
+          dicas: "O limão e as ervas ajudam a realçar o sabor do peixe sem a necessidade de molhos cremosos.",
+          tempoPreparo: "25 minutos",
+          rendimento: "2 porções"
+        },
+        {
+          nome: "Frango ao Curry com Leite de Coco",
+          ingredientes: "200g de peito de frango, 1/2 xícara de leite de coco, 1 colher de sopa de curry, 1 cebola, 1 dente de alho, 1 tomate picado, Coentro a gosto, Sal e pimenta",
+          modoPreparo: [
+            "Corte o peito de frango em cubos e tempere com sal e pimenta.",
+            "Refogue a cebola e o alho picados em azeite até dourarem levemente.",
+            "Adicione o frango e doure todos os lados.",
+            "Incorpore o curry e o tomate, cozinhando por 5 minutos antes de adicionar o leite de coco.",
+            "Deixe cozinhar em fogo médio até o frango ficar macio, cerca de 15 minutos, e finalize com coentro fresco picado.",
+            "Sirva acompanhado de arroz integral ou quinoa, se desejar."
+          ],
+          dicas: "Esta receita é perfeita para quem busca uma opção sem lactose com sabor marcante.",
+          tempoPreparo: "30 minutos",
+          rendimento: "3 porções"
+        },
+        {
+          nome: "Salada de Quinoa com Legumes",
+          ingredientes: "1 xícara de quinoa, 1/2 pepino, 1 tomate médio, 1/4 de cebola roxa, 1 colher de sopa de azeite, Suco de 1 limão, Sal e pimenta",
+          modoPreparo: [
+            "Cozinhe a quinoa em água com sal conforme as instruções e deixe esfriar.",
+            "Corte o pepino, o tomate e a cebola em cubos pequenos.",
+            "Misture a quinoa com os vegetais e tempere com azeite, suco de limão, sal e pimenta.",
+            "Misture delicadamente e sirva fresca."
+          ],
+          dicas: "Esta salada é rica em fibras e proteínas, perfeita para uma refeição leve.",
+          tempoPreparo: "20 minutos",
+          rendimento: "2 porções"
+        },
+        {
+          nome: "Carne Grelhada com Legumes",
+          ingredientes: "200g de carne magra, 1/2 abobrinha, 1 cenoura, 1 colher de sopa de azeite, Sal, pimenta e ervas a gosto",
+          modoPreparo: [
+            "Tempere a carne com sal, pimenta e ervas e grelhe em uma frigideira com azeite até atingir o ponto desejado.",
+            "Corte a abobrinha e a cenoura em rodelas ou tiras e refogue separadamente em um fio de azeite até ficarem macias.",
+            "Sirva a carne fatiada acompanhada dos legumes, ajustando o tempero se necessário."
+          ],
+          dicas: "Utilize cortes magros para manter a refeição equilibrada e sem lactose.",
+          tempoPreparo: "30 minutos",
+          rendimento: "2 porções"
+        },
+        {
+          nome: "Sopa de Tomate Sem Lactose",
+          ingredientes: "4 tomates maduros, 1 cebola média, 1 dente de alho, 2 xícaras de caldo de legumes, Folhas de manjericão, Sal e pimenta a gosto",
+          modoPreparo: [
+            "Corte os tomates em pedaços e pique a cebola e o alho.",
+            "Refogue a cebola e o alho em um fio de azeite até ficarem macios.",
+            "Adicione os tomates e o caldo de legumes e deixe cozinhar por cerca de 15-20 minutos.",
+            "Bata a mistura no liquidificador até obter um creme liso, retorne à panela e aqueça novamente.",
+            "Finalize com folhas de manjericão, ajuste os temperos e sirva quente."
+          ],
+          dicas: "Esta sopa é uma opção clássica e pode ser acompanhada por torradas sem glúten.",
+          tempoPreparo: "25 minutos",
+          rendimento: "3 porções"
+        },
+        {
+          nome: "Quinoa com Legumes e Ervas",
+          ingredientes: "1 xícara de quinoa, 1 cenoura, 1/2 xícara de ervilhas, 1/2 cebola, 1 colher de sopa de azeite, Ervas finas (salsinha, cebolinha), Sal e pimenta a gosto",
+          modoPreparo: [
+            "Cozinhe a quinoa conforme as instruções e reserve para esfriar um pouco.",
+            "Pique a cenoura, a cebola e cozinhe as ervilhas levemente no vapor.",
+            "Misture os legumes com a quinoa, tempere com azeite, ervas finas, sal e pimenta, mexendo bem para incorporar os sabores.",
+            "Sirva em temperatura ambiente ou levemente aquecido."
+          ],
+          dicas: "Uma opção rica em nutrientes, ideal para um almoço leve sem lactose.",
+          tempoPreparo: "20 minutos",
+          rendimento: "2 porções"
+        },
+        {
+          nome: "Frango Grelhado com Molho de Mostarda",
+          ingredientes: "200g de peito de frango, 1 colher de chá de mostarda Dijon, 1 colher de chá de mel, 1 colher de sopa de azeite, Sal e pimenta a gosto",
+          modoPreparo: [
+            "Tempere o frango com sal e pimenta e grelhe em uma frigideira com azeite até dourar bem.",
+            "Em uma tigela pequena, misture a mostarda com o mel e um pouco de azeite para formar um molho homogêneo.",
+            "Regue o frango grelhado com o molho de mostarda e sirva imediatamente, acompanhado de vegetais ou uma salada."
+          ],
+          dicas: "Verifique se a mostarda Dijon utilizada é isenta de lactose para manter a receita sem lactose.",
+          tempoPreparo: "25 minutos",
+          rendimento: "2 porções"
+        },
+        {
+          nome: "Espaguete de Abobrinha com Molho de Tomate Sem Lactose",
+          ingredientes: "1 abobrinha grande, 1 xícara de molho de tomate caseiro, 1 dente de alho, Folhas de manjericão, Sal e pimenta a gosto",
+          modoPreparo: [
+            "Utilize um cortador em espiral para transformar a abobrinha em fios.",
+            "Em uma panela, aqueça o molho de tomate com alho picado e folhas de manjericão, deixando ferver por 5 minutos para intensificar o sabor.",
+            "Misture o espaguete de abobrinha com o molho, ajustando o sal e a pimenta, e sirva imediatamente."
+          ],
+          dicas: "Esta alternativa é excelente para quem deseja reduzir carboidratos mantendo o sabor de um tradicional espaguete ao molho.",
+          tempoPreparo: "20 minutos",
+          rendimento: "2 porções"
+        },
+        {
+          nome: "Peixe Grelhado com Ervas Finas",
+          ingredientes: "200g de filé de peixe, Suco de 1 limão, 1 dente de alho, Ervas finas (salsinha, tomilho), 1 colher de sopa de azeite, Sal e pimenta a gosto",
+          modoPreparo: [
+            "Tempere o filé de peixe com suco de limão, alho picado, sal e pimenta, deixando marinar por 10 minutos.",
+            "Grelhe o peixe em uma frigideira com azeite até que fique macio e levemente dourado, cerca de 3-4 minutos de cada lado.",
+            "Finalize com ervas frescas picadas e sirva imediatamente."
+          ],
+          dicas: "Sirva com uma rodela de limão para um toque cítrico adicional.",
+          tempoPreparo: "20 minutos",
+          rendimento: "2 porções"
+        },
+        {
+          nome: "Salada de Frango com Abacate e Manga",
+          ingredientes: "200g de peito de frango, 1 abacate, 1 manga, Folhas de alface, Suco de 1 limão, 1 colher de sopa de azeite, Sal e pimenta a gosto",
+          modoPreparo: [
+            "Grelhe o peito de frango temperado com sal e pimenta e corte-o em tiras finas.",
+            "Corte o abacate e a manga em cubos pequenos, mantendo a textura delicada da fruta.",
+            "Lave e rasgue as folhas de alface e disponha-as em uma tigela grande.",
+            "Misture o frango, o abacate e a manga com a alface, temperando com suco de limão, azeite, sal e pimenta.",
+            "Misture suavemente para que os ingredientes se incorporem sem desmanchar as frutas e sirva imediatamente."
+          ],
+          dicas: "Esta salada é refrescante e rica em nutrientes, ideal para o verão e para controle glicêmico.",
+          tempoPreparo: "20 minutos",
+          rendimento: "2 porções"
+        }
+      ],
+      // Categoria "diabetico" (10 receitas)
+      diabetico: [
+        {
+          nome: "Peito de Frango Grelhado com Salada Verde",
+          ingredientes: "200g de peito de frango, Folhas de alface, rúcula, 1 tomate, 1/2 pepino, 1 colher de sopa de azeite, Suco de 1 limão, Sal e pimenta a gosto",
+          modoPreparo: [
+            "Tempere o peito de frango com sal e pimenta e grelhe em uma frigideira até dourar e ficar cozido por dentro.",
+            "Lave e corte as folhas de alface, rúcula, o tomate e o pepino em pedaços adequados para salada.",
+            "Misture os vegetais em uma tigela e regue com azeite e suco de limão.",
+            "Fatie o frango e disponha sobre a salada, misturando delicadamente para que os sabores se integrem."
+          ],
+          dicas: "Esta refeição é baixa em carboidratos e rica em proteínas, ideal para o controle glicêmico.",
+          tempoPreparo: "25 minutos",
+          rendimento: "2 porções"
+        },
+        {
+          nome: "Sopa de Legumes com Couve",
+          ingredientes: "1/2 maço de couve, 1 abobrinha, 1 cenoura, 1 cebola, 2 xícaras de caldo de legumes, Sal e pimenta a gosto",
+          modoPreparo: [
+            "Corte a abobrinha, a cenoura e a cebola em cubos pequenos.",
+            "Refogue a cebola em um pouco de azeite até ficar transparente.",
+            "Acrescente os legumes e o caldo, cozinhando em fogo médio até que fiquem macios, cerca de 20-25 minutos.",
+            "Adicione a couve fatiada e deixe cozinhar por mais 5 minutos, ajustando o sal e a pimenta.",
+            "Sirva a sopa quente, perfeita para uma refeição reconfortante."
+          ],
+          dicas: "Esta sopa é rica em fibras e ajuda a manter níveis estáveis de açúcar no sangue.",
+          tempoPreparo: "30 minutos",
+          rendimento: "3 porções"
+        },
+        {
+          nome: "Salada Mediterrânea com Atum",
+          ingredientes: "1 lata de atum em água, Folhas de alface, 1 tomate, 10 azeitonas pretas, 1/2 pepino, 1 colher de sopa de azeite, Suco de 1/2 limão, Sal e pimenta",
+          modoPreparo: [
+            "Escorra o atum e desfie-o em uma tigela.",
+            "Lave e corte as folhas de alface, o tomate, o pepino e fatie as azeitonas.",
+            "Misture todos os ingredientes em uma tigela grande e tempere com azeite, suco de limão, sal e pimenta.",
+            "Sirva imediatamente para aproveitar a frescura dos vegetais."
+          ],
+          dicas: "Esta salada oferece uma combinação equilibrada de proteína e vegetais, ideal para diabéticos.",
+          tempoPreparo: "15 minutos",
+          rendimento: "2 porções"
+        },
+        {
+          nome: "Omelete de Claras com Espinafre",
+          ingredientes: "3 claras de ovo, 1/2 xícara de espinafre picado, 1 tomate pequeno picado, Sal e pimenta, 1 colher de chá de azeite",
+          modoPreparo: [
+            "Bata as claras com sal e pimenta até ficarem levemente espumosas.",
+            "Aqueça o azeite em uma frigideira e refogue o espinafre e o tomate por 2-3 minutos.",
+            "Despeje as claras batidas sobre os vegetais e cozinhe até que a omelete esteja firme.",
+            "Dobre a omelete com cuidado e sirva imediatamente."
+          ],
+          dicas: "Uma excelente fonte de proteína com baixo índice glicêmico.",
+          tempoPreparo: "10 minutos",
+          rendimento: "1 omelete (2 porções)"
+        },
+        {
+          nome: "Salada de Quinoa com Legumes",
+          ingredientes: "1 xícara de quinoa, 1/2 pepino, 1 tomate, 1/4 de cebola roxa, 2 colheres de sopa de salsinha, 1 colher de sopa de azeite, Suco de 1 limão, Sal e pimenta",
+          modoPreparo: [
+            "Cozinhe a quinoa conforme as instruções e deixe esfriar.",
+            "Corte o pepino, o tomate e a cebola em cubos pequenos.",
+            "Misture a quinoa com os vegetais e a salsinha picada.",
+            "Tempere com azeite, suco de limão, sal e pimenta, misturando delicadamente.",
+            "Sirva a salada fresca, ideal para manter os níveis de açúcar sob controle."
+          ],
+          dicas: "Esta salada é rica em fibras e ajuda a regular a glicemia.",
+          tempoPreparo: "20 minutos",
+          rendimento: "3 porções"
+        },
+        {
+          nome: "Sopa de Abóbora com Gengibre",
+          ingredientes: "500g de abóbora, 1 pedaço pequeno de gengibre, 1 cebola, 2 xícaras de caldo de legumes, Sal e pimenta a gosto",
+          modoPreparo: [
+            "Descasque e corte a abóbora em cubos; pique a cebola e rale o gengibre.",
+            "Refogue a cebola em azeite até ficar translúcida, depois adicione a abóbora e o gengibre.",
+            "Acrescente o caldo de legumes e deixe cozinhar por 20 minutos ou até que a abóbora esteja bem macia.",
+            "Bata toda a mistura no liquidificador até obter um creme liso e retorne à panela para aquecer.",
+            "Ajuste os temperos e sirva quente."
+          ],
+          dicas: "O gengibre dá um toque picante que pode ajudar no controle dos níveis de açúcar.",
+          tempoPreparo: "30 minutos",
+          rendimento: "3 porções"
+        },
+        {
+          nome: "Frango ao Limão com Brócolis",
+          ingredientes: "200g de peito de frango, 1/2 cabeça de brócolis, Suco de 1 limão, 1 dente de alho, 1 colher de sopa de azeite, Sal e pimenta",
+          modoPreparo: [
+            "Tempere o frango com sal, pimenta, alho picado e suco de limão; grelhe até ficar bem cozido.",
+            "Cozinhe os buquês de brócolis no vapor ou em água fervente por cerca de 5-7 minutos até ficarem macios.",
+            "Fatie o frango e sirva-o sobre uma cama de brócolis, regando com um pouco mais de suco de limão se desejar."
+          ],
+          dicas: "Este prato é simples, mas nutritivo, ideal para um almoço balanceado.",
+          tempoPreparo: "25 minutos",
+          rendimento: "2 porções"
+        },
+        {
+          nome: "Salmão Grelhado com Aspargos",
+          ingredientes: "200g de salmão, 100g de aspargos, Suco de 1/2 limão, 1 colher de sopa de azeite, Sal e pimenta",
+          modoPreparo: [
+            "Tempere o salmão com suco de limão, sal e pimenta e deixe marinar por 10 minutos.",
+            "Grelhe o salmão em uma frigideira com azeite, aproximadamente 3-4 minutos de cada lado, até que esteja cozido mas ainda úmido.",
+            "Na mesma frigideira, refogue os aspargos rapidamente por 3-4 minutos, para que mantenham sua crocância.",
+            "Sirva o salmão fatiado acompanhado dos aspargos, finalizando com um fio de azeite e mais suco de limão se desejar."
+          ],
+          dicas: "O salmão é uma excelente fonte de ômega-3 e, aliado aos aspargos, forma uma refeição leve e nutritiva.",
+          tempoPreparo: "20 minutos",
+          rendimento: "2 porções"
+        },
+        {
+          nome: "Salada de Lentilhas com Vegetais",
+          ingredientes: "1 xícara de lentilhas cozidas, 1 cenoura, 1/2 pepino, 1 tomate, 1/4 de cebola, 1 colher de sopa de azeite, Suco de 1 limão, Sal e pimenta a gosto",
+          modoPreparo: [
+            "Cozinhe as lentilhas até ficarem macias, se ainda não estiverem prontas.",
+            "Corte a cenoura, o pepino, o tomate e a cebola em cubos pequenos.",
+            "Misture as lentilhas com os vegetais em uma tigela grande e tempere com azeite, suco de limão, sal e pimenta.",
+            "Misture bem e deixe repousar por 5 minutos antes de servir."
+          ],
+          dicas: "Esta salada é rica em fibras e proteínas, ajudando no controle glicêmico.",
+          tempoPreparo: "30 minutos",
+          rendimento: "3 porções"
+        },
+        {
+          nome: "Quinoa com Frango e Legumes",
+          ingredientes: "1 xícara de quinoa, 200g de peito de frango grelhado, 1/2 xícara de brócolis, 1 cenoura, 1 colher de sopa de azeite, Suco de 1 limão, Sal e pimenta a gosto",
+          modoPreparo: [
+            "Cozinhe a quinoa conforme as instruções e reserve.",
+            "Grelhe o frango temperado com sal, pimenta e suco de limão; corte-o em tiras.",
+            "Cozinhe os brócolis e a cenoura no vapor ou refogue rapidamente para que fiquem macios, mas ainda crocantes.",
+            "Misture a quinoa com o frango e os legumes, ajustando o tempero com um pouco mais de suco de limão, sal e pimenta.",
+            "Sirva imediatamente, garantindo uma refeição balanceada para diabéticos."
+          ],
+          dicas: "Este prato combina proteína, fibras e baixo índice glicêmico, ideal para manter a energia estável.",
+          tempoPreparo: "30 minutos",
+          rendimento: "3 porções"
+        }
+      ]
+    };
+
+    function gerarPlano() {
+      const restricao = document.getElementById("restricoes").value;
+      const planoDiv = document.getElementById("plano");
+      planoDiv.innerHTML = "";
+      console.log("Restrição selecionada:", restricao);
+      let receitas = refeicoes[restricao] || [];
+      let header = document.createElement("h3");
+      header.textContent = "Seu Plano de Refeições";
+      planoDiv.appendChild(header);
+      if (receitas.length === 0) {
+        let msg = document.createElement("p");
+        msg.style.color = "red";
+        msg.textContent = "Nenhuma receita encontrada para a restrição selecionada.";
+        planoDiv.appendChild(msg);
+        return;
+      }
+      receitas.forEach(refeicao => {
+        let refeicaoDiv = document.createElement("div");
+        refeicaoDiv.classList.add("refeicao");
+        let nome = document.createElement("h3");
+        nome.textContent = refeicao.nome;
+        refeicaoDiv.appendChild(nome);
+        let ing = document.createElement("p");
+        ing.textContent = "Ingredientes: " + refeicao.ingredientes;
+        refeicaoDiv.appendChild(ing);
+        let modoPreparoList = document.createElement("ul");
+        refeicao.modoPreparo.forEach(etapa => {
+          let li = document.createElement("li");
+          li.textContent = etapa;
+          modoPreparoList.appendChild(li);
+        });
+        refeicaoDiv.appendChild(modoPreparoList);
+        if (refeicao.dicas) {
+          let dicas = document.createElement("p");
+          dicas.textContent = "Dicas: " + refeicao.dicas;
+          refeicaoDiv.appendChild(dicas);
+        }
+        if (refeicao.tempoPreparo) {
+          let tempo = document.createElement("p");
+          tempo.textContent = "Tempo de Preparo: " + refeicao.tempoPreparo;
+          refeicaoDiv.appendChild(tempo);
+        }
+        if (refeicao.rendimento) {
+          let rendimento = document.createElement("p");
+          rendimento.textContent = "Rendimento: " + refeicao.rendimento;
+          refeicaoDiv.appendChild(rendimento);
+        }
+        planoDiv.appendChild(refeicaoDiv);
+      });
+    }
+  </script>
+</body>
+</html>
