@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
@@ -9,178 +10,179 @@
   <title>Planejador de Dietas e Refeições</title>
   <style>
     /* ================================
-       VARIÁVEIS E ESTILOS GERAIS
-    ================================= */
-    :root {
-      --primary-color: #00ffff;       /* Neon Cyan */
-      --secondary-color: #ff00ff;     /* Neon Magenta */
-      --bg-color: #121212;            /* Fundo escuro */
-      --card-bg: rgba(20, 20, 20, 0.95);
-      --text-color: #e0e0e0;
-      --accent-color: #00ffff;
-      --button-bg: #00ffff;
-      --button-hover: #00cccc;
-    }
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-    }
-    body {
-      background: var(--bg-color);
-      color: var(--text-color);
-      font-family: 'Poppins', sans-serif;
-      line-height: 1.6;
-      overflow-x: hidden;
-      position: relative;
-    }
-    /* Fundo animado futurista */
-    body::before {
-      content: "";
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 200%;
-      height: 200%;
-      background: linear-gradient(45deg, #0f0f0f, #121212, #1f1f1f, #121212);
-      background-size: 400% 400%;
-      z-index: -2;
-      animation: bgAnim 20s ease infinite;
-    }
-    @keyframes bgAnim {
-      0% { transform: translateX(0) translateY(0); }
-      50% { transform: translateX(-25%) translateY(-25%); }
-      100% { transform: translateX(0) translateY(0); }
-    }
-    /* Overlay de grid sutil para efeito tecnológico */
-    body::after {
-      content: "";
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background-image: 
-        linear-gradient(0deg, transparent 24%, rgba(0, 255, 255, 0.05) 25%, rgba(0, 255, 255, 0.05) 26%, transparent 27%, transparent 74%, rgba(0, 255, 255, 0.05) 75%, rgba(0, 255, 255, 0.05) 76%, transparent 77%, transparent),
-        linear-gradient(90deg, transparent 24%, rgba(0, 255, 255, 0.05) 25%, rgba(0, 255, 255, 0.05) 26%, transparent 27%, transparent 74%, rgba(0, 255, 255, 0.05) 75%, rgba(0, 255, 255, 0.05) 76%, transparent 77%, transparent);
-      background-size: 50px 50px;
-      z-index: -1;
-    }
-    header {
-      background-color: var(--primary-color);
-      color: var(--bg-color);
-      text-align: center;
-      padding: 20px;
-      font-size: 2rem;
-      font-weight: 700;
-      font-family: 'Orbitron', sans-serif;
-      text-shadow: 0 0 8px var(--accent-color);
-      border-bottom: 2px solid var(--secondary-color);
-    }
-    main {
-      max-width: 1200px;
-      margin: 20px auto;
-      padding: 20px;
-      display: flex;
-      flex-direction: column;
-      gap: 20px;
-    }
-    h2 {
-      margin-bottom: 15px;
-      color: var(--primary-color);
-      font-size: 1.5rem;
-      font-family: 'Orbitron', sans-serif;
-      text-shadow: 0 0 5px var(--accent-color);
-    }
-    h3 {
-      margin-bottom: 10px;
-      color: var(--secondary-color);
-      font-size: 1.3rem;
-      font-family: 'Orbitron', sans-serif;
-    }
-    label {
-      font-weight: 600;
-      display: block;
-      margin-top: 10px;
-      color: var(--text-color);
-    }
-    select {
-      width: 100%;
-      padding: 10px;
-      margin-top: 10px;
-      margin-bottom: 15px;
-      border: 1px solid rgba(255,255,255,0.3);
-      border-radius: 4px;
-      font-size: 1rem;
-      background: var(--card-bg);
-      color: var(--text-color);
-    }
-    button {
-      background-color: var(--button-bg);
-      color: var(--bg-color);
-      border: none;
-      padding: 12px 20px;
-      border-radius: 4px;
-      cursor: pointer;
-      font-size: 1rem;
-      transition: background-color 0.3s ease, transform 0.2s ease, box-shadow 0.3s;
-    }
-    button:hover {
-      background-color: var(--button-hover);
-      transform: translateY(-2px);
-      box-shadow: 0 0 8px var(--accent-color);
-    }
-    /* ================================
-       CARDS E LAYOUT
-    ================================= */
-    .card {
-      background: var(--card-bg);
-      border-radius: 8px;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.6);
-      padding: 20px;
-      margin-bottom: 20px;
-      transition: transform 0.3s ease, box-shadow 0.3s ease;
-    }
-    .card:hover {
-      transform: translateY(-4px);
-      box-shadow: 0 0 12px var(--accent-color);
-    }
-    /* Linha Superior: Configuração da Dieta e Assistente Inteligente lado a lado */
-    .top-row {
-      display: flex;
-      gap: 20px;
-      flex-wrap: wrap;
-    }
-    .top-row .card {
-      flex: 1 1 300px;
-    }
-    /* Estilo para o resultado do plano */
-    .planoRefeicoes {
-      background: rgba(0, 0, 0, 0.2);
-      padding: 15px;
-      border-radius: 4px;
-      margin-top: 10px;
-    }
-    .refeicao {
-      background: rgba(0, 0, 0, 0.2);
-      padding: 15px;
-      border-radius: 4px;
-      margin-bottom: 15px;
-      border-left: 4px solid var(--accent-color);
-    }
-    .refeicao ul {
-      margin-left: 20px;
-      list-style: disc;
-    }
-    /* Responsividade */
-    @media (max-width: 768px) {
-      header {
-        font-size: 1.8rem;
-      }
-      main {
-        padding: 10px;
-      }
-    }
+   VARIÁVEIS E ESTILOS GERAIS
+================================= */
+:root {
+  --primary-color: #007BFF;       /* Azul primário */
+  --secondary-color: #6c757d;     /* Cinza secundário */
+  --bg-color: #f2f2f2;            /* Fundo claro */
+  --card-bg: rgba(255, 255, 255, 0.9);
+  --text-color: #333333;
+  --accent-color: #007BFF;
+  --button-bg: #007BFF;
+  --button-hover: #0056b3;
+}
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+body {
+  background: var(--bg-color);
+  color: var(--text-color);
+  font-family: 'Poppins', sans-serif;
+  line-height: 1.6;
+  overflow-x: hidden;
+  position: relative;
+}
+/* Fundo animado futurista */
+body::before {
+  content: "";
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 200%;
+  height: 200%;
+  background: linear-gradient(45deg, #f2f2f2, #e0e0e0, #f2f2f2, #e0e0e0);
+  background-size: 400% 400%;
+  z-index: -2;
+  animation: bgAnim 20s ease infinite;
+}
+@keyframes bgAnim {
+  0% { transform: translateX(0) translateY(0); }
+  50% { transform: translateX(-25%) translateY(-25%); }
+  100% { transform: translateX(0) translateY(0); }
+}
+/* Overlay de grid sutil para efeito tecnológico */
+body::after {
+  content: "";
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-image: 
+    linear-gradient(0deg, transparent 24%, rgba(0, 123, 255, 0.05) 25%, rgba(0, 123, 255, 0.05) 26%, transparent 27%, transparent 74%, rgba(0, 123, 255, 0.05) 75%, rgba(0, 123, 255, 0.05) 76%, transparent 77%, transparent),
+    linear-gradient(90deg, transparent 24%, rgba(0, 123, 255, 0.05) 25%, rgba(0, 123, 255, 0.05) 26%, transparent 27%, transparent 74%, rgba(0, 123, 255, 0.05) 75%, rgba(0, 123, 255, 0.05) 76%, transparent 77%, transparent);
+  background-size: 50px 50px;
+  z-index: -1;
+}
+header {
+  background-color: var(--primary-color);
+  color: var(--bg-color);
+  text-align: center;
+  padding: 20px;
+  font-size: 2rem;
+  font-weight: 700;
+  font-family: 'Orbitron', sans-serif;
+  text-shadow: 0 0 8px var(--accent-color);
+  border-bottom: 2px solid var(--secondary-color);
+}
+main {
+  max-width: 1200px;
+  margin: 20px auto;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+h2 {
+  margin-bottom: 15px;
+  color: var(--primary-color);
+  font-size: 1.5rem;
+  font-family: 'Orbitron', sans-serif;
+  text-shadow: 0 0 5px var(--accent-color);
+}
+h3 {
+  margin-bottom: 10px;
+  color: var(--secondary-color);
+  font-size: 1.3rem;
+  font-family: 'Orbitron', sans-serif;
+}
+label {
+  font-weight: 600;
+  display: block;
+  margin-top: 10px;
+  color: var(--text-color);
+}
+select {
+  width: 100%;
+  padding: 10px;
+  margin-top: 10px;
+  margin-bottom: 15px;
+  border: 1px solid rgba(0, 0, 0, 0.2);
+  border-radius: 4px;
+  font-size: 1rem;
+  background: var(--card-bg);
+  color: var(--text-color);
+}
+button {
+  background-color: var(--button-bg);
+  color: var(--bg-color);
+  border: none;
+  padding: 12px 20px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 1rem;
+  transition: background-color 0.3s ease, transform 0.2s ease, box-shadow 0.3s;
+}
+button:hover {
+  background-color: var(--button-hover);
+  transform: translateY(-2px);
+  box-shadow: 0 0 8px var(--accent-color);
+}
+/* ================================
+   CARDS E LAYOUT
+================================= */
+.card {
+  background: var(--card-bg);
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  padding: 20px;
+  margin-bottom: 20px;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+.card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 0 12px var(--accent-color);
+}
+/* Linha Superior: Configuração da Dieta e Assistente Inteligente lado a lado */
+.top-row {
+  display: flex;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+.top-row .card {
+  flex: 1 1 300px;
+}
+/* Estilo para o resultado do plano */
+.planoRefeicoes {
+  background: rgba(0, 0, 0, 0.05);
+  padding: 15px;
+  border-radius: 4px;
+  margin-top: 10px;
+}
+.refeicao {
+  background: rgba(0, 0, 0, 0.05);
+  padding: 15px;
+  border-radius: 4px;
+  margin-bottom: 15px;
+  border-left: 4px solid var(--accent-color);
+}
+.refeicao ul {
+  margin-left: 20px;
+  list-style: disc;
+}
+/* Responsividade */
+@media (max-width: 768px) {
+  header {
+    font-size: 1.8rem;
+  }
+  main {
+    padding: 10px;
+  }
+}
+
   </style>
 </head>
 <body>
